@@ -1,5 +1,5 @@
 import { useState, FormEvent } from 'react';
-import { Bus, Phone, Mail, User, KeyRound, Sparkles, Globe } from 'lucide-react';
+import { Bus, Phone, Mail, User, Lock, Eye, EyeOff, KeyRound, Sparkles, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 import { Language } from '../translations';
 
 interface AuthScreenProps {
@@ -9,11 +9,18 @@ interface AuthScreenProps {
 }
 
 export default function AuthScreen({ onLoginSuccess, language = 'ENG', onChangeLanguage }: AuthScreenProps) {
-  const [isLogin, setIsLogin] = useState(true);
+  // Step state within onboarding / authentication flow: 'login' | 'signup' | 'otp'
+  const [step, setStep] = useState<'login' | 'signup' | 'otp'>('login');
+  
+  // Onboarding Demo details prefilled
   const [name, setName] = useState('Sakariye Hamud');
   const [phone, setPhone] = useState('+252 63 487234');
   const [email, setEmail] = useState('sakariyehamud@gmail.com');
-  const [pin, setPin] = useState('1234');
+  const [password, setPassword] = useState('Safar2026!');
+  const [otpCode, setOtpCode] = useState('2026'); // Pre-filled for demo speed
+  
+  // Password visual toggles & loaders
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentLang, setCurrentLang] = useState<Language>(language);
@@ -27,50 +34,96 @@ export default function AuthScreen({ onLoginSuccess, language = 'ENG', onChangeL
 
   const isSom = currentLang === 'SOM';
 
-  const handleSubmit = (e: FormEvent) => {
+  // Path 1: Login Submit -> directly to Home Page
+  const handleLoginSubmit = (e: FormEvent) => {
     e.preventDefault();
     setError('');
 
     if (!phone.trim()) {
-      setError(isSom ? 'Fadhlan qor nambarkaaga telefoonka.' : 'Please provide a valid Somali phone contact.');
+      setError(isSom ? 'Fadhlan qor nambarkaaga telefoonka.' : 'Please provide a valid linked phone number.');
       return;
     }
-    if (!pin.trim() || pin.length < 4) {
-      setError(isSom ? 'Fadhlan gali PIN badbaado oo ka kooban 4 lambar.' : 'Please supply a standard 4-digit security PIN verification.');
-      return;
-    }
-    if (!isLogin && !name.trim()) {
-      setError(isSom ? 'Fadhlan qor magacaaga oo buuxa.' : 'Please supply your full passenger name.');
+    if (!password.trim() || password.length < 4) {
+      setError(isSom ? 'Fadhlan gali koodhka sirta ah.' : 'Please supply correct password credentials.');
       return;
     }
 
     setIsLoading(true);
 
-    // Simulate database lookup/creation
+    // Simulate standard lookup
     setTimeout(() => {
       setIsLoading(false);
       onLoginSuccess({
-        name: isLogin ? (name || 'Sakariye Hamud') : name,
+        name: name || 'Sakariye Hamud',
         phone,
-        email: email || `${phone.replace(/\D/g,'')}@magaalotrip.com`,
+        email: email || `${phone.replace(/\D/g, '')}@magaalotrip.com`,
+      });
+    }, 1200);
+  };
+
+  // Path 2: Signup Submit -> enters 'otp' stage
+  const handleSignupSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!name.trim()) {
+      setError(isSom ? 'Fadhlan qor magacaaga rakaabka.' : 'Please write your full passenger name.');
+      return;
+    }
+    if (!phone.trim()) {
+      setError(isSom ? 'Fadhlan qor nambarka telefoonka gabdhka.' : 'Please type a valid linked phone number.');
+      return;
+    }
+    if (!password.trim() || password.length < 4) {
+      setError(isSom ? 'Fadhlan u samee koodh sir ah oo adag.' : 'Please create a secure password (min 4 characters).');
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      setIsLoading(false);
+      setStep('otp'); // advance to OTP confirmation next
+    }, 1200);
+  };
+
+  // Path 3: OTP Verify -> logs into Home Page
+  const handleOtpSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!otpCode.trim() || otpCode.length !== 4) {
+      setError(isSom ? 'Fadhlan gali koodhka OTP ee 4-ta xaraf ah.' : 'Please type the 4-digit OTP code correctly.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    // Simulate OTP server check
+    setTimeout(() => {
+      setIsLoading(false);
+      onLoginSuccess({
+        name,
+        phone,
+        email: email || `${phone.replace(/\D/g, '')}@magaalotrip.com`,
       });
     }, 1200);
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 py-12" id="auth-screen-viewport">
+    <div className="min-h-screen bg-[#f4f6fa] flex items-center justify-center p-4 py-10 animate-fade-in" id="auth-screen-viewport">
       <div className="w-full max-w-md bg-white rounded-[32px] shadow-[0_16px_48px_rgba(11,63,161,0.06)] overflow-hidden border border-slate-100 flex flex-col justify-between">
         
-        {/* Upper Brand Info graphic with beautiful blue to teal gradient header */}
+        {/* Upper Brand Blue/Cyan Header with dynamic wave illustration */}
         <div className="bg-gradient-to-r from-brand-blue to-brand-cyan px-6 pt-10 pb-8 rounded-b-[36px] text-center text-white relative">
           
-          {/* Language selection toggle on upper card right */}
-          <div className="absolute top-4 right-4 z-20 flex bg-white/14 backdrop-blur-md rounded-xl p-0.5 border border-white/10 text-xs">
+          {/* Multilingual language widget in header */}
+          <div className="absolute top-4 right-4 z-20 flex bg-white/15 backdrop-blur-md rounded-xl p-0.5 border border-white/10 text-xs shadow-sm">
             <button
               type="button"
               onClick={() => handleLangToggle('ENG')}
-              className={`px-2 py-1 font-bold rounded-lg transition-all ${
-                currentLang === 'ENG' ? 'bg-white text-[#0b3fa1]' : 'text-white'
+              className={`px-2.5 py-1 font-extrabold rounded-lg transition-all ${
+                currentLang === 'ENG' ? 'bg-white text-[#0b3fa1] shadow-sm' : 'text-white'
               }`}
             >
               ENG
@@ -78,191 +131,355 @@ export default function AuthScreen({ onLoginSuccess, language = 'ENG', onChangeL
             <button
               type="button"
               onClick={() => handleLangToggle('SOM')}
-              className={`px-2 py-1 font-bold rounded-lg transition-all ${
-                currentLang === 'SOM' ? 'bg-white text-[#0b3fa1]' : 'text-white'
+              className={`px-2.5 py-1 font-extrabold rounded-lg transition-all ${
+                currentLang === 'SOM' ? 'bg-white text-[#0b3fa1] shadow-sm' : 'text-white'
               }`}
             >
               SOM
             </button>
           </div>
 
-          {/* Decorative graphic patterns */}
           <div className="absolute top-0 left-0 w-24 h-24 bg-white/5 rounded-full filter blur-xl" />
           <div className="absolute bottom-[-10px] left-[15%] w-16 h-16 bg-white/10 rounded-full filter blur-md" />
 
-          {/* Magaalo Logo Box */}
+          {/* Magaalo Circular Brand Icon */}
           <div className="w-14 h-14 bg-white/10 border border-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto shadow-inner mb-4">
             <div className="bg-[#0b3fa1] text-white p-2 text-xl rounded-xl">
               <Bus size={24} className="stroke-[2.5]" />
             </div>
           </div>
 
-          <p className="text-teal-200 text-xs font-black tracking-widest uppercase mb-1">
-            {isSom ? 'NIDAAMKA TIGIDHAADA JSL' : 'Pass Travel System'}
+          <p className="text-teal-200 text-[10px] font-black tracking-widest uppercase mb-1">
+            {isSom ? 'NIDAAMKA GAADHIIDKA JSL' : 'E-Transit Voyager Platform'}
           </p>
           <h2 className="text-2xl font-black tracking-tight">Magaalo Trip</h2>
-          <p className="text-xs text-white/70 max-w-[250px] mx-auto mt-2 leading-relaxed">
+          <p className="text-xs text-white/70 max-w-[270px] mx-auto mt-2 leading-relaxed">
             {isSom 
-              ? 'Tikidho deg-deg ah oo loogu talagalay safarada gawaadhida tooska ah ee Bariga Afrika.' 
-              : 'Instant booking of direct and reliable bus transport voyages in East Africa.'}
+              ? 'Hel tigidhada baska oo ku dhex safar gobolada gudaheeda si badbaado leh.' 
+              : 'Secure online bus vouchers for regional and interstate travel.'}
           </p>
         </div>
 
-        {/* Lower Auth forms layout */}
-        <div className="p-7 space-y-6 text-left">
-          <div className="flex bg-slate-100 rounded-xl p-1 border">
-            <button
-              onClick={() => {
-                setIsLogin(true);
-                setError('');
-              }}
-              className={`flex-1 py-1.5 text-center text-xs font-extrabold uppercase rounded-lg transition-all ${
-                isLogin ? 'bg-white text-[#0b3fa1] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {isSom ? 'Soo Gal' : 'Log In'}
-            </button>
-            <button
-              onClick={() => {
-                setIsLogin(false);
-                setError('');
-              }}
-              className={`flex-1 py-1.5 text-center text-xs font-extrabold uppercase rounded-lg transition-all ${
-                !isLogin ? 'bg-white text-[#0b3fa1] shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              {isSom ? 'Is-diiwaangeli' : 'Sign Up'}
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* If sign up we ask for full name */}
-            {!isLogin && (
-              <div>
-                <label className="block text-[10px] font-extrabold text-[#0b3fa1] uppercase tracking-wider mb-1.5">
-                  {isSom ? 'Magaca Buuxa' : 'Full Passenger Name'}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <User size={16} />
-                  </span>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Sakariye Hamud"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none focus:ring-1 focus:ring-brand-blue/30"
-                  />
-                </div>
+        {/* Lower Authentication Stack area */}
+        <div className="p-7 space-y-6 text-left" id="auth-forms-stack">
+          
+          {/* STEP 1: LOGIN (Telephone & Password) */}
+          {step === 'login' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-extrabold text-[#0b3fa1] uppercase tracking-wide">
+                  {isSom ? 'Soo Gal' : 'Sign In Account'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setStep('signup');
+                    setError('');
+                  }}
+                  className="text-xs font-bold text-[#069faa] hover:underline"
+                  id="btn-goto-signup"
+                >
+                  {isSom ? 'Diiwaangeli Koonto' : 'Create Account ➔'}
+                </button>
               </div>
-            )}
 
-            {/* Telephone input (both logins and signups) */}
-            <div>
-              <label className="block text-[10px] font-extrabold text-[#0b3fa1] uppercase tracking-wider mb-1.5">
-                {isSom ? 'Lambarka Talifoonka' : 'Somali Phone Number'}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Phone size={16} />
+              <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {/* Phone Field */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {isSom ? 'Lambarka Talifoonka ku Xidhan' : 'Telephone Linked'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Phone size={16} />
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+252 63 ••• •••"
+                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none focus:ring-1 focus:ring-brand-blue/30 font-mono"
+                      id="login-phone"
+                    />
+                  </div>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {isSom ? 'Koodhka Sirta ah (Password)' : 'Account Password'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={isSom ? 'Gali password' : 'Enter security password'}
+                      className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none"
+                      id="login-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-center">
+                    ⚠️ {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-blue to-brand-cyan text-white text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(11,63,161,0.2)] hover:opacity-95 transition-all cursor-pointer disabled:opacity-55"
+                  id="btn-login-submit"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <Sparkles size={14} className="text-teal-200" />
+                      <span>{isSom ? 'Galo si Badbaado leh ➔' : 'Login Dashboard ➔'}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* Demo Assist Banner */}
+              <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-2xl text-[10px] text-slate-400 leading-normal text-center">
+                <span className="font-extrabold block text-slate-500 mb-1">
+                  💡 {isSom ? 'SI TIHIN AMAAN RAASMI AH:' : 'DEMO LOGIN ASSISTANCE:'}
                 </span>
-                <input
-                  type="text"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. +252 63 487234"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none focus:ring-1 focus:ring-brand-blue/30 font-mono"
-                />
+                <span>
+                  {isSom 
+                    ? 'Koonto tijaabo ah ayaa diyaar u ah. Kaliya taabo badhanka "Galo" si aad u tijaabiso hoyga.'
+                    : 'The fields are preloaded for stress-free review. Just click "Login Dashboard" to proceed directly.'}
+                </span>
               </div>
             </div>
+          )}
 
-            {/* Email Address */}
-            {!isLogin && (
-              <div>
-                <label className="block text-[10px] font-extrabold text-[#0b3fa1] uppercase tracking-wider mb-1.5">
-                  {isSom ? 'Iimaylka Rasmiga ah' : 'Email Address'}
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Mail size={16} />
-                  </span>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. sakariye@mail.com"
-                    className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none"
-                  />
-                </div>
+          {/* STEP 2: SIGNUP (Passenger Name, Telephone, Password) */}
+          {step === 'signup' && (
+            <div className="space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <button
+                  onClick={() => {
+                    setStep('login');
+                    setError('');
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-[#0b3fa1] flex items-center gap-1"
+                >
+                  <ArrowLeft size={13} />
+                  <span>{isSom ? 'Ku noqo' : 'Back to Login'}</span>
+                </button>
+                <h3 className="text-sm font-extrabold text-[#0b3fa1] uppercase tracking-wide">
+                  {isSom ? 'Is-diiwaangeli' : 'Create Profiling'}
+                </h3>
               </div>
-            )}
 
-            {/* 4-digit PIN indicator */}
-            <div>
-              <label className="block text-[10px] font-extrabold text-[#0b3fa1] uppercase tracking-wider mb-1.5">
-                {isSom ? 'PIN-ka Badbaadada (4 Lambar)' : '4-Digit Security PIN'}
-              </label>
-              <div className="relative">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <KeyRound size={16} />
-                </span>
-                <input
-                  type="password"
-                  required
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value)}
-                  placeholder="••••"
-                  className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-sm font-bold tracking-widest focus:border-[#0b3fa1] focus:outline-none focus:ring-1 focus:ring-brand-blue/30 font-mono"
-                />
+              <form onSubmit={handleSignupSubmit} className="space-y-4">
+                {/* Passenger Name */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {isSom ? 'Magaca Rakaabka Buuxa' : 'Passenger Name'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <User size={16} />
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Abdirahman Omar"
+                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none"
+                      id="signup-name"
+                    />
+                  </div>
+                </div>
+
+                {/* Telephone Linked */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {isSom ? 'Nambarka Talifoonka ku Xidhan' : 'Telephone Linked'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Phone size={16} />
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="+252 63 ••• •••"
+                      className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none font-mono"
+                      id="signup-phone"
+                    />
+                  </div>
+                </div>
+
+                {/* Account Password */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
+                    {isSom ? 'Koodhka Sirta ah (Password)' : 'Account Password'}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                      <Lock size={16} />
+                    </span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full h-11 pl-10 pr-10 rounded-xl border border-slate-200 text-xs font-semibold focus:border-[#0b3fa1] focus:outline-none"
+                      id="signup-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-center">
+                    ⚠️ {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-blue to-brand-cyan text-white text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(11,63,161,0.15)] hover:opacity-95 cursor-pointer disabled:opacity-55"
+                  id="btn-signup-submit"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span>{isSom ? 'Diiwaangeli & Hel OTP ➔' : 'Register & Send OTP ➔'}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* STEP 3: OTP SCREEN (4-Digit SMS verification) */}
+          {step === 'otp' && (
+            <div className="space-y-5 animate-fade-in" id="otp-form-panel">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <button
+                  onClick={() => {
+                    setStep('signup');
+                    setError('');
+                  }}
+                  className="text-xs font-bold text-slate-500 hover:text-[#0b3fa1] flex items-center gap-1"
+                >
+                  <ArrowLeft size={13} />
+                  <span>{isSom ? 'Bedel Macluumaadka' : 'Edit Info'}</span>
+                </button>
+                <h3 className="text-sm font-extrabold text-[#0b3fa1] uppercase tracking-wide">
+                  {isSom ? 'Xaqiijinta' : 'OTP Verification'}
+                </h3>
+              </div>
+
+              <div className="text-center space-y-1 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <p className="text-xs font-bold text-slate-600">
+                  {isSom ? 'Koodhka Amniga la Diiray' : 'One Time Password Sent'}
+                </p>
+                <p className="text-[11px] text-slate-400 font-semibold leading-relaxed">
+                  {isSom 
+                    ? `Waxaan u dirnay 4-ta lambar ee aqoonsiga telefonka ee ${phone}` 
+                    : `We prompted a 4-digit security code to your telephone: ${phone}`}
+                </p>
+              </div>
+
+              <form onSubmit={handleOtpSubmit} className="space-y-4">
+                {/* OTP Input box */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">
+                    {isSom ? 'GALI 4 PIN EE CASRIGA AH' : 'ENTER VERIFICATION KEY'}
+                  </label>
+                  
+                  <div className="flex justify-center my-3 relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#069faa]">
+                      <ShieldCheck size={20} className="animate-pulse" />
+                    </span>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                      placeholder="••••"
+                      className="w-48 h-12 text-center text-xl font-black tracking-[0.75em] bg-slate-50/50 rounded-2xl border-2 border-slate-200 focus:border-[#0b3fa1] focus:outline-none focus:ring-2 focus:ring-[#0b3fa1]/20 font-mono pl-10"
+                      id="otp-input-field"
+                    />
+                  </div>
+                </div>
+
+                {error && (
+                  <p className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-center">
+                    ⚠️ {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-blue via-[#085fa8] to-brand-cyan text-white text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-55"
+                  id="btn-otp-verify-submit"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <KeyRound size={14} className="text-teal-200" />
+                      <span>{isSom ? 'Xaqiiji & Bilow ➔' : 'Verify & Launch App ➔'}</span>
+                    </>
+                  )}
+                </button>
+              </form>
+
+              {/* OTP Help & Resend Options */}
+              <div className="text-center space-y-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    alert(isSom ? 'Koodh cusub ayaa loo diray talifoonkaaga.' : 'A new code has been simulated and pushed.');
+                    setOtpCode('2026');
+                  }}
+                  className="text-xs font-bold text-[#069faa] hover:underline"
+                >
+                  {isSom ? '🔄 Mar kale dir koodhka (Resend)' : '🔄 Resend SMS Code'}
+                </button>
+
+                <p className="text-[10px] text-slate-400 font-mono">
+                  {isSom ? 'SI TIHIN DEMO: Isticmaal koodhka pre-filled ama 2026' : 'FOR DEMO PREVIEW: Use prefilled key or 2026'}
+                </p>
               </div>
             </div>
+          )}
 
-            {/* Error notifications */}
-            {error && (
-              <p className="text-xs text-rose-600 font-bold bg-rose-50 border border-rose-100 p-2.5 rounded-xl text-center animate-shake">
-                ⚠️ {error}
-              </p>
-            )}
-
-            {/* Submit button with loader */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-brand-blue to-brand-cyan hover:opacity-95 text-white font-extrabold text-xs uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_16px_rgba(11,63,161,0.2)] hover:scale-[1.01] transition-all cursor-pointer disabled:opacity-50"
-              id="btn-auth-submit"
-            >
-              {isLoading ? (
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <>
-                  <Sparkles size={14} className="text-teal-200" />
-                  <span>
-                    {isLogin 
-                      ? (isSom ? 'Soo Gal si Badbaado leh' : 'Log In Securely') 
-                      : (isSom ? 'Abuur Koontadaada' : 'Sign Up Account')}
-                  </span>
-                </>
-              )}
-            </button>
-
-          </form>
-
-          {/* Quick instructions to play */}
-          <div className="pt-2 bg-slate-50/50 p-3 rounded-2xl text-[10px] text-slate-400 border border-dashed border-slate-200 leading-relaxed text-center">
-            <span className="font-extrabold block text-slate-500 mb-0.5">
-              {isSom ? '💡 MACLUUMAADKA DEMO-KA:' : '💡 DEMO MODE INSTRUCTIONS:'}
-            </span>
-            <span>
-              {isSom 
-                ? 'Waxaad si toos ah u gali kartaa xogta diyaarsan ama waxaad samaysan kartaa koonto rakaab oo cusub! Xogta waxaa lagu kaydiyaa browser-kaaga.'
-                : 'You can log in directly with the pre-filled telephone credentials or sign up a brand-new passenger! Passwords are saved under local storage.'}
-            </span>
-          </div>
         </div>
 
       </div>

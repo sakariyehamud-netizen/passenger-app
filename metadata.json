@@ -1,6 +1,10 @@
 {
   "name": "Magaalo Trip",
   "description": "Comprehensive mobile travel booking application for Hargeisa, Berbera, and beyond.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

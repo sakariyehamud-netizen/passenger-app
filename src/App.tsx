@@ -12,9 +12,11 @@ import UserProfile from './components/UserProfile';
 import NotificationModal from './components/NotificationModal';
 import AuthScreen from './components/AuthScreen';
 import BottomNav from './components/BottomNav';
+import SplashScreen from './components/SplashScreen';
 import { CheckCircle, ArrowRight, Calendar, Ticket as TicketIcon } from 'lucide-react';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(true);
   const [language, setLanguage] = useState<Language>(() => {
     const saved = localStorage.getItem('magaalo_lang');
     return (saved === 'SOM' ? 'SOM' : 'ENG') as Language;
@@ -26,18 +28,13 @@ export default function App() {
     localStorage.setItem('magaalo_lang', language);
   }, [language]);
 
-  // Authentication State (prefilled with Sakariye Hamud's metadata information)
+  // Authentication State (defaults to null to let visitors run through clean onboarding)
   const [currentUser, setCurrentUser] = useState<{ name: string; phone: string; email: string } | null>(() => {
     const saved = localStorage.getItem('magaalo_user');
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { return null; }
     }
-    // Default logged in user representing MetaData context
-    return {
-      name: 'Sakariye Hamud',
-      phone: '+252 63 487234',
-      email: 'sakariyehamud@gmail.com',
-    };
+    return null;
   });
 
   // Nav Tabs configuration
@@ -210,7 +207,17 @@ export default function App() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // Unauthenticated screen return
+  // 1. Core Onboarding Splash screen shown first on boot
+  if (showSplash) {
+    return (
+      <SplashScreen
+        onDismiss={() => setShowSplash(false)}
+        language={language}
+      />
+    );
+  }
+
+  // Unauthenticated screen return (Login ➔ SignUp ➔ OTP)
   if (!currentUser) {
     return (
       <AuthScreen 
